@@ -1,0 +1,10 @@
+# colcon output
+build/
+install/
+log/
+
+# Robotont sources: separate git repos, cloned from repos/*.repos (step 3)
+ws/src/
+
+# Generated Python caches
+__pycache__/

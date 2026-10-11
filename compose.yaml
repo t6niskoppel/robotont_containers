@@ -1,0 +1,13 @@
+services:
+  ros:
+    image: osrf/ros:jazzy-desktop-full
+    network_mode: host
+    ipc: host
+    # The image's 'ubuntu' user is uid 1000, same as you, so X11 lets it in. #TODO: what about in 
+    user: ubuntu
+    environment:
+      DISPLAY: ${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      # Unset on WSL (WSLg needs no cookie), hence the /dev/null fallback.
+      - ${XAUTHORITY:-/dev/null}:/home/ubuntu/.Xauthority:ro
