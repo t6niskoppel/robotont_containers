@@ -77,9 +77,13 @@ Publishing comes later, probably to GHCR (see [Registry](#registry)).
 
 - [ ] Pass `/dev/dri` into the container and add the video/render groups.
 - Check (Linux): rviz2's log no longer says `failed to load driver: radeonsi`.
-- Check (Windows): find out what WSLg needs (`/dev/dxg` and `/usr/lib/wsl`
-  instead of `/dev/dri`). Software rendering is acceptable if that turns out to
-  be hard.
+- [ ] Windows, in progress: hardware OpenGL through WSL's GPU layer. Mesa's
+  `d3d12` driver (already in our image, Mesa 25.2) translates OpenGL to
+  Direct3D 12, so it works with any GPU vendor that has a recent Windows driver.
+  It needs `/dev/dxg` and the libraries in `/usr/lib/wsl/lib` from Docker
+  Desktop's VM. Unknown: whether Docker Desktop exposes both.
+- Check (Windows): `glxinfo -B` reports `D3D12 (<your GPU>)`, not `llvmpipe`.
+  Keep software rendering as the fallback for machines where this fails.
 
 ## 4. Robotont sources on the laptop
 
