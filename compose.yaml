@@ -4,7 +4,12 @@ services:
     extends:
       file: platform/${HOST_OS:?set HOST_OS in .env to linux, windows or mac}.yaml
       service: display
-    image: osrf/ros:jazzy-desktop-full
+    # ROS version: ROS_DISTRO in .env or the shell, default jazzy.
+    image: t6niskoppel/robotont-dev:${ROS_DISTRO:-jazzy}
+    build:
+      context: .
+      args:
+        ROS_DISTRO: ${ROS_DISTRO:-jazzy}
     network_mode: host
     ipc: host
     # Keep bash alive when started via `docker compose run`/`up`.
