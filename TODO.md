@@ -40,7 +40,9 @@ rviz2
   (`ros2 run demo_nodes_cpp talker` / `listener`).
 - [x] Windows (Docker Desktop, WSL2 backend, host networking turned on): rviz2
   opens a window on the Windows desktop. Done by Tõnis on 2026-10-12.
-- [ ] Windows: talker and listener in two containers hear each other.
+- [x] Windows: talker and listener in two containers hear each other. Also
+  with `FASTDDS_BUILTIN_TRANSPORTS=UDPv4`, so it isn't only shared memory.
+  Done by Claude on 2026-10-12.
 - [ ] macOS: `platform/mac.yaml` (XQuartz) is written but untested.
 
 How the display works per OS: `HOST_OS` in `.env` picks `platform/<os>.yaml`,
@@ -66,8 +68,10 @@ Publishing comes later, probably to GHCR (see [Registry](#registry)).
 - [x] Linux: `docker compose build`, then `docker compose push`. `jazzy` pushed
   2026-10-12, amd64 only (Apple Silicon Macs would run it under emulation).
 - [x] Check (Linux): step 1's checks still pass with our image.
-- [ ] Check (Windows): `docker login`, `docker compose pull` (no build), and step
-  1's checks pass (rviz2, plus talker/listener in two containers).
+- [x] Check (Windows): `docker login`, `docker compose pull` (no build), and step
+  1's checks pass (rviz2, plus talker/listener in two containers). Done by
+  Claude on 2026-10-12: the local image's digest matches Docker Hub's, and
+  rviz2 maps its window on the WSLg display with no errors in its log.
 
 ## 3. GPU for graphics
 
