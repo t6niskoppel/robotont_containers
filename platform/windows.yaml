@@ -1,0 +1,7 @@
+# Docker Desktop on Windows: uses the WSLg X server that Docker Desktop exposes.
+services:
+  display:
+    environment:
+      DISPLAY: :0
+    volumes:
+      - /run/desktop/mnt/host/wslg/.X11-unix:/tmp/.X11-unix

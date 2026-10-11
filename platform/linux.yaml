@@ -1,0 +1,9 @@
+# Native X11: share the host's X socket and auth cookie.
+services:
+  display:
+    environment:
+      DISPLAY: ${DISPLAY:-:0}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      # Unset under WSL (WSLg needs no cookie), hence the /dev/null fallback.
+      - ${XAUTHORITY:-/dev/null}:/home/ubuntu/.Xauthority:ro

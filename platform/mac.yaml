@@ -1,0 +1,6 @@
+# Docker Desktop on macOS: connect to XQuartz over TCP.
+# XQuartz's own DISPLAY is a local socket path the container can't use.
+services:
+  display:
+    environment:
+      DISPLAY: host.docker.internal:0

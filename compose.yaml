@@ -1,13 +1,18 @@
 services:
   ros:
+    # Display settings per host OS, chosen by HOST_OS in .env. See platform/.
+    extends:
+      file: platform/${HOST_OS:?set HOST_OS in .env to linux, windows or mac}.yaml
+      service: display
     image: osrf/ros:jazzy-desktop-full
     network_mode: host
     ipc: host
-    # The image's 'ubuntu' user is uid 1000, same as you, so X11 lets it in. #TODO: what about in 
+    # Keep bash alive when started via `docker compose run`/`up`.
+    stdin_open: true
+    tty: true
+    # The image's 'ubuntu' user is uid 1000, same as you, so X11 lets it in.
     user: ubuntu
     environment:
-      DISPLAY: ${DISPLAY}
-    volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix
-      # Unset on WSL (WSLg needs no cookie), hence the /dev/null fallback.
-      - ${XAUTHORITY:-/dev/null}:/home/ubuntu/.Xauthority:ro
+      # X shared memory doesn't cross the VM boundary on Windows/macOS, which leaves Qt
+      # windows (rviz2) blank. Qt disables it whenever this is set, whatever the value.
+      QT_X11_NO_MITSHM: "1"
