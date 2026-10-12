@@ -48,9 +48,8 @@ rviz2
 How the display works per OS: `HOST_OS` in `.env` picks `platform/<os>.yaml`,
 which `compose.yaml` extends. See [Windows setup](#windows-setup).
 
-- [ ] Decide: `.env` is committed with `HOST_OS=windows`, so every Linux
-  checkout has to edit a tracked file. Option: commit `.env.example`, and
-  gitignore `.env`.
+- [x] `.env` is no longer tracked: `.env.example` is the template, and each
+  machine copies it to `.env` once. Pulling never overwrites local settings.
 
 ## 2. Our own image, on Docker Hub (private, for testing)
 
@@ -75,8 +74,18 @@ Publishing comes later, probably to GHCR (see [Registry](#registry)).
 
 ## 3. GPU for graphics
 
-- [ ] Pass `/dev/dri` into the container and add the video/render groups.
-- Check (Linux): rviz2's log no longer says `failed to load driver: radeonsi`.
+- [x] Linux: `devices: [/dev/dri]` in `platform/linux.yaml`, and nothing else.
+  No video/render group is needed, so there's no machine-specific GID. The
+  container can't open `/dev/dri/renderD*` itself; the X server (Xwayland)
+  opens the GPU and passes it over the X socket (DRI3). The container only has
+  to see the device nodes. Done by Claude on 2026-10-12.
+- [x] Check (Linux): rviz2 reports OpenGL 4.6 (was 4.5 with `llvmpipe`), and
+  its log no longer says `failed to load driver: radeonsi`. This laptop has an
+  AMD (`amdgpu`) and an NVIDIA GPU; Mesa uses the AMD one. The NVIDIA one would
+  need the NVIDIA container toolkit, which we haven't tried.
+- [ ] Watch at step 6: rendering *without* a window (Gazebo camera sensors,
+  headless) may open `/dev/dri/renderD*` directly. That would need the render
+  group after all.
 - [x] Windows: hardware OpenGL through WSL's GPU layer, in
   `platform/windows.yaml`. Mesa's `d3d12` driver (already in our image, Mesa
   25.2) translates OpenGL to Direct3D 12, so it works with any GPU vendor that
@@ -109,21 +118,47 @@ Publishing comes later, probably to GHCR (see [Registry](#registry)).
 
 ## 4. Robotont sources on the laptop
 
-- [ ] Add `repos/jazzy.repos` (start from
-  `_trash/robotont_containers_attempt1/repos/jazzy.repos`).
-- [ ] Clone it into `ws/src` on the host (`vcs import`, run inside the container
-  so the host needs no ROS tools).
-- Check (both): `ws/src` holds the repos, and `git status` works in them from
-  the host.
+```bash
+docker compose run --rm ros vcs import --input /repos/jazzy.repos src
+```
+
+- [x] `repos/jazzy.repos` lists only what the simulation needs: `robotont_msgs`,
+  `robotont_description`, `robotont_nuc_description`, `robotont_driver` (fake
+  driver), `robotont_gazebo` (branch `jazzy-devel-sygis`) and `gz_planar_move`
+  (its URDF loads the plugin). Found from the package.xml dependencies.
+  Navigation, demos, lidar and `robotont_lite_description` get added when a
+  step needs them.
+- [x] `compose.yaml` mounts `./ws` at `/ws` (the working directory) and `./repos`
+  read-only at `/repos`. `ws/src/.gitkeep` is committed because `vcs import`
+  won't create `src` itself; the clones in `ws/src` are gitignored.
+- [x] Check (Linux): six repos in `ws/src` on the right branches, owned by the
+  host user, `git status` clean from the host. Done by Claude on 2026-10-12.
+- [ ] Check (Windows): the same command. Watch for:
+  - Windows git calling every file modified: line endings (`core.autocrlf`).
+  - Windows git refusing with "dubious ownership" (`safe.directory`).
+  - The clone being slow on a Windows-folder bind mount.
+- [ ] Open question for step 6: `robotont_description`, `_nuc_description` and
+  `_driver` also have `jazzy-devel-sygis` branches, like `robotont_gazebo`. We
+  use plain `jazzy`, as the old workspace did. Switch if Gazebo needs them.
 
 ## 5. Build the workspace
 
-- [ ] Dockerfile: add `ros-jazzy-ros-gz` and the rosdep dependencies. Push the
-  new image.
-- [ ] Run `colcon build` inside the container.
-- [ ] Decide: `build/`, `install/` and `log/` are large and Nextcloud would sync
-  them. Put them in Docker volumes, or exclude them from sync.
-- Check (both): the build finishes with no failed packages.
+```bash
+docker compose pull      # or: docker compose build
+docker compose run --rm ros colcon build --symlink-install
+```
+
+- [x] Dockerfile installs what `rosdep install --from-paths src --ignore-src -s`
+  reported: `libasio-dev`, `asio-cmake-module`, `io-context`,
+  `joint-state-publisher`, `realsense2-description`, `serial-driver`. Gazebo
+  (`gz-sim-vendor`, `ros-gz-sim`, `ros-gz-bridge`, ...) is already in
+  desktop-full. `gz-transport13` (from `gz_planar_move`) has no rosdep key but
+  comes with the Gazebo vendor packages. Pushed to Docker Hub 2026-10-12.
+- [x] Build output stays in `ws/build`, `ws/install`, `ws/log` on the host
+  (gitignored). Nextcloud syncing it is fine (Tõnis).
+- [x] Check (Linux): all 6 packages build (~35 s); `rosdep check` is satisfied
+  except the known `gz-transport13` key. Done by Claude on 2026-10-12.
+- [ ] Check (Windows): `docker compose pull`, then the same build.
 
 ## 6. Simulation on the laptop
 
@@ -155,7 +190,7 @@ publishing to GHCR.
 What worked (Tõnis, 2026-10-12): Docker Desktop with the WSL2 backend, started
 from Windows.
 
-1. `.env`: `HOST_OS=windows`.
+1. Copy `.env.example` to `.env` (`HOST_OS=windows` is already set there).
 2. Docker Desktop → Settings → Resources → Network → *Enable host networking*,
    then restart Docker Desktop (needs version 4.34 or later).
 3. GUI goes through WSLg. Two things make it work, both in the repo:
@@ -199,11 +234,10 @@ Keep these in mind; add each one only when a step needs it.
 - **Domain ID**: robot N is on `ROS_DOMAIN_ID=N`. Keep it at or below 101,
   because higher values collide with Linux's ephemeral port range. On a
   Robotont 3 Lite the namespace is `rtN`.
-- **Build output** (`build/`, `install/`, `log/`) must not land in the
-  Nextcloud-synced folder.
 - **Sources stay on the host**, never baked into the dev image. Otherwise a
   rebuild throws away branches and edits, and there's nothing to push.
-- **Gazebo**: `ros-jazzy-ros-gz` isn't in desktop-full. `robotont_gazebo` needs
+- **Gazebo**: its parts are in desktop-full (not the `ros-gz` metapackage).
+  `robotont_gazebo` needs
   `gz_planar_move` (sygism/gz_planar_move) and is on branch
   `jazzy-devel-sygis`.
 - **Lyrical** needs a source patch (`scripts/patch_lyrical_compat.py`) and an

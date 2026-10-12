@@ -5,7 +5,8 @@ The repo has containers for running ROS2 jazzy and ROS2 lyrical robotont stack.
 
 ## Setup
 
-Machine-specific settings live in [`.env`](.env). Set `HOST_OS` to your operating system:
+Machine-specific settings live in `.env`, which git doesn't track. Copy
+[`.env.example`](.env.example) to `.env` once, then set `HOST_OS` to your operating system:
 
 ```sh
 HOST_OS=linux     # or windows, mac
@@ -15,7 +16,8 @@ This picks the matching display settings from `platform/`.
 
 ### Linux
 
-Set `HOST_OS=linux`. The container uses your `DISPLAY` and `XAUTHORITY`.
+Set `HOST_OS=linux`. The container uses your `DISPLAY` and `XAUTHORITY`, and renders on
+your GPU through `/dev/dri`.
 
 ### Windows (Docker Desktop)
 

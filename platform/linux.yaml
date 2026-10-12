@@ -7,3 +7,7 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
       # Unset under WSL (WSLg needs no cookie), hence the /dev/null fallback.
       - ${XAUTHORITY:-/dev/null}:/home/ubuntu/.Xauthority:ro
+    # GPU rendering. The container doesn't open the GPU itself: the X server does,
+    # and hands it over the X socket (DRI3). So no video/render group is needed.
+    devices:
+      - /dev/dri

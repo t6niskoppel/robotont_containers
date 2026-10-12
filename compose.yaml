@@ -17,6 +17,11 @@ services:
     tty: true
     # The image's 'ubuntu' user is uid 1000, same as you, so X11 lets it in.
     user: ubuntu
+    # The colcon workspace, on the host so edits and git branches survive the container.
+    working_dir: /ws
+    volumes:
+      - ./ws:/ws
+      - ./repos:/repos:ro
     environment:
       # X shared memory doesn't cross the VM boundary on Windows/macOS, which leaves Qt
       # windows (rviz2) blank. Qt disables it whenever this is set, whatever the value.

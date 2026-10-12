@@ -1,0 +1,29 @@
+# Robotont sources for ROS 2 Jazzy: what the laptop needs to run the simulation.
+# Cloned into ws/src by:  vcs import --input /repos/jazzy.repos src
+repositories:
+  robotont_msgs:
+    type: git
+    url: https://github.com/robotont/robotont_msgs.git
+    version: jazzy
+  robotont_description:
+    type: git
+    url: https://github.com/robotont/robotont_description.git
+    version: jazzy
+  robotont_nuc_description:
+    type: git
+    url: https://github.com/robotont/robotont_nuc_description.git
+    version: jazzy
+  # The simulation uses its fake driver.
+  robotont_driver:
+    type: git
+    url: https://github.com/robotont/robotont_driver.git
+    version: jazzy
+  robotont_gazebo:
+    type: git
+    url: https://github.com/robotont/robotont_gazebo.git
+    version: jazzy-devel-sygis
+  # Gazebo plugin that moves the robot; loaded by robotont_gazebo's URDF.
+  gz_planar_move:
+    type: git
+    url: https://github.com/sygism/gz_planar_move.git
+    version: jazzy
