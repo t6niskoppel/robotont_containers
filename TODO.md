@@ -77,13 +77,35 @@ Publishing comes later, probably to GHCR (see [Registry](#registry)).
 
 - [ ] Pass `/dev/dri` into the container and add the video/render groups.
 - Check (Linux): rviz2's log no longer says `failed to load driver: radeonsi`.
-- [ ] Windows, in progress: hardware OpenGL through WSL's GPU layer. Mesa's
-  `d3d12` driver (already in our image, Mesa 25.2) translates OpenGL to
-  Direct3D 12, so it works with any GPU vendor that has a recent Windows driver.
-  It needs `/dev/dxg` and the libraries in `/usr/lib/wsl/lib` from Docker
-  Desktop's VM. Unknown: whether Docker Desktop exposes both.
-- Check (Windows): `glxinfo -B` reports `D3D12 (<your GPU>)`, not `llvmpipe`.
-  Keep software rendering as the fallback for machines where this fails.
+- [x] Windows: hardware OpenGL through WSL's GPU layer, in
+  `platform/windows.yaml`. Mesa's `d3d12` driver (already in our image, Mesa
+  25.2) translates OpenGL to Direct3D 12, so it works with any GPU vendor that
+  has a recent Windows driver. Done by Claude on 2026-10-12. Findings:
+  - Docker Desktop's VM has both `/dev/dxg` and `/usr/lib/wsl/lib`
+    (`libd3d12.so`, `libdxcore.so`, the GPU vendor's driver).
+  - All three are needed: `GALLIUM_DRIVER=d3d12` (Mesa picks `llvmpipe`
+    otherwise), `LD_LIBRARY_PATH=/usr/lib/wsl/lib`, and `/dev/dxg`. Works as
+    the `ubuntu` user.
+  - No automatic fallback: with `d3d12` forced and no `/dev/dxg`, rviz2 can't
+    create an OpenGL context. Fallback is `GALLIUM_DRIVER=llvmpipe` in `.env`.
+  - Speed (glmark2, 1280x940, RTX 3070): `d3d12` stays at ~100-130 FPS on
+    every scene, capped by copying each frame to WSLg. `llvmpipe` is faster on
+    light scenes but drops to 13-26 FPS on heavy ones (terrain, refract), and
+    uses the CPU that the simulation needs. So `d3d12` is the default.
+- [x] Check (Windows): `GL_RENDERER` is `D3D12 (NVIDIA GeForce RTX 3070)`, and
+  rviz2 reports OpenGL 4.6 (4.5 with `llvmpipe`). `glxinfo` isn't in the image
+  (`mesa-utils`); the check used a throwaway container.
+- [ ] **Windows hardware graphics needs more work and testing.** It works on
+  one machine (RTX 3070), only rviz2 and glmark2 were tried, and it's on by
+  default for every Windows user. Still to do:
+  - Test on Windows machines with an Intel/AMD GPU, and without a GPU (D3D12
+    should then use WARP, Microsoft's software renderer).
+  - Test real workloads: rviz2 with robot models and sensor data, and Gazebo
+    (step 6). Compare against `llvmpipe` for speed and correctness.
+  - Look into the ~100-130 FPS cap from copying frames to WSLg, and whether
+    rendering is correct in that copy mode.
+  - Decide whether `d3d12` stays the default, given there's no automatic
+    fallback.
 
 ## 4. Robotont sources on the laptop
 

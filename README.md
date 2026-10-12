@@ -24,6 +24,8 @@ Set `HOST_OS=linux`. The container uses your `DISPLAY` and `XAUTHORITY`.
    *Enable host networking*, then restart Docker Desktop. Without it ROS 2 can't discover the
    robot or other nodes on the network.
 3. Make sure Docker Desktop uses the WSL 2 backend (the default); GUI apps are shown via WSLg.
+   They render on your GPU. If rviz2 fails with "Failed to create an OpenGL context", add
+   `GALLIUM_DRIVER=llvmpipe` to `.env` to use software rendering instead.
 
 ### macOS (Docker Desktop)
 

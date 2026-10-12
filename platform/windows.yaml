@@ -3,5 +3,14 @@ services:
   display:
     environment:
       DISPLAY: :0
+      # GPU rendering: Mesa's d3d12 driver turns OpenGL into Direct3D 12 calls on the
+      # Windows GPU driver, via /dev/dxg and the libraries in /usr/lib/wsl/lib.
+      # There's no automatic fallback: set GALLIUM_DRIVER=llvmpipe in .env to use
+      # software rendering if rviz2 can't create an OpenGL context.
+      GALLIUM_DRIVER: ${GALLIUM_DRIVER:-d3d12}
+      LD_LIBRARY_PATH: /usr/lib/wsl/lib
+    devices:
+      - /dev/dxg
     volumes:
       - /run/desktop/mnt/host/wslg/.X11-unix:/tmp/.X11-unix
+      - /usr/lib/wsl:/usr/lib/wsl:ro
